@@ -1,9 +1,8 @@
-===============
+================
 Django Turnstile
-===============
+================
 
 Add Cloudflare Turnstile validator widget to the forms of your django project.
-
 
 This project refers to github project django-hcaptcha (author: AndrejZbin)
 
