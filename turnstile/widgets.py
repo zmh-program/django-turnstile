@@ -1,6 +1,6 @@
 from urllib.parse import urlencode
 from django import forms
-from turnstile.settings import JS_API_URL, SITEKEY
+from turnstile.settings import JS_API_URL, SITEKEY, ENABLE
 
 
 class TurnstileWidget(forms.Widget):
@@ -9,6 +9,10 @@ class TurnstileWidget(forms.Widget):
     def __init__(self, *args, **kwargs):
         self.extra_url = {}
         super().__init__(*args, **kwargs)
+
+    @property
+    def is_hidden(self):
+        return not ENABLE
 
     def value_from_datadict(self, data, files, name):
         return data.get('cf-turnstile-response')
@@ -24,3 +28,8 @@ class TurnstileWidget(forms.Widget):
         if self.extra_url:
             context['api_url'] += '?' + urlencode(self.extra_url)
         return context
+
+    def render(self, name, value, attrs=None, renderer=None):
+        if not ENABLE:
+            return ""
+        return super().render(name, value, attrs, renderer)
