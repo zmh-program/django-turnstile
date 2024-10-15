@@ -7,3 +7,4 @@ SECRET = getattr(settings, 'TURNSTILE_SECRET', '1x000000000000000000000000000000
 TIMEOUT = getattr(settings, 'TURNSTILE_TIMEOUT', 5)
 DEFAULT_CONFIG = getattr(settings, 'TURNSTILE_DEFAULT_CONFIG', {})
 PROXIES = getattr(settings, 'TURNSTILE_PROXIES', {})
+ENABLE = getattr(settings, 'TURNSTILE_ENABLE', True)

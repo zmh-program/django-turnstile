@@ -7,7 +7,7 @@ from urllib.request import build_opener, Request, ProxyHandler
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
-from turnstile.settings import DEFAULT_CONFIG, PROXIES, SECRET, TIMEOUT, VERIFY_URL
+from turnstile.settings import DEFAULT_CONFIG, ENABLE, PROXIES, SECRET, TIMEOUT, VERIFY_URL
 from turnstile.widgets import TurnstileWidget
 
 
@@ -46,6 +46,8 @@ class TurnstileField(forms.Field):
         return attrs
 
     def validate(self, value):
+        if not ENABLE:
+            return
         super().validate(value)
         opener = build_opener(ProxyHandler(PROXIES))
         post_data = urlencode({
