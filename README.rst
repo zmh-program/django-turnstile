@@ -106,3 +106,28 @@ You will need to disable the Turnstile field in your unit tests, since your test
         def test_something(self, mock: MagicMock) -> None:
             response = self.client.post("/contact/", self.test_msg)
             self.assertEqual(response.status_code, HTTP_302_FOUND)
+
+Remote IP
+------------------
+In order to improve bot detection, Turnstile accepts an optional parameter remoteip with the the visitor's IP address.
+During server-side validation, it's sent to Cloudflare and it's used as bonus/malus during bot index calculation.
+Before using it, make sure to verify whether your country requires a notice or disclaimer, since you may be collecting user information.
+
+remote_ip should be passed from view to form to Turnstile field, you can find an example below.
+Note that this is an example, in order to get real client IP REMOTE_ADDR may not be enough.
+
+.. code-block:: python
+
+    # views.py
+    def my_view(request):
+        remote_ip = request.META.get('REMOTE_ADDR')
+        form = MyForm(request.POST or None, remote_ip=remote_ip)
+
+    # forms.py
+    class MyForm(forms.Form):
+        turnstile = TurnstileField()
+    
+        def __init__(self, *args, remote_ip=None, **kwargs):
+            super().__init__(*args, **kwargs)
+            if remote_ip:
+                self.fields['turnstile'].remote_ip = remote_ip
