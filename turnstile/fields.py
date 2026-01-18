@@ -19,7 +19,8 @@ class TurnstileField(forms.Field):
         'required': _('Please prove you are a human.'),
     }
 
-    def __init__(self, **kwargs):
+    def __init__(self, remote_ip = None, **kwargs):
+        self.remote_ip = remote_ip
         superclass_parameters = inspect.signature(super().__init__).parameters
         superclass_kwargs = {}
         widget_settings = DEFAULT_CONFIG.copy()
@@ -53,6 +54,7 @@ class TurnstileField(forms.Field):
         post_data = urlencode({
             'secret': SECRET,
             'response': value,
+            'remoteip': self.remote_ip,
         }).encode()
         request = Request(VERIFY_URL, post_data)
         try:
