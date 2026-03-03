@@ -8,7 +8,16 @@ class TurnstileWidget(RenderableMixin, forms.Widget):
     input_type = "hidden"
     template_name = 'turnstile/forms/widgets/turnstile_widget.html'
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, sitekey=None, *args, **kwargs):
+        """
+        Initialize the Turnstile widget.
+        
+        Args:
+            sitekey: Optional sitekey to use. If not provided, falls back to
+                    settings.TURNSTILE_SITEKEY. Allows multiple Turnstile widgets
+                    with different sitekeys on the same page.
+        """
+        self.sitekey = sitekey
         self.extra_url = {}
         super().__init__(*args, **kwargs)
 
@@ -21,7 +30,8 @@ class TurnstileWidget(RenderableMixin, forms.Widget):
 
     def build_attrs(self, base_attrs, extra_attrs=None):
         attrs = super().build_attrs(base_attrs, extra_attrs)
-        attrs['data-sitekey'] = SITEKEY
+        # Use instance sitekey if provided, otherwise fall back to settings
+        attrs['data-sitekey'] = self.sitekey or SITEKEY
         return attrs
 
     def get_context(self, name, value, attrs):
