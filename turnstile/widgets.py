@@ -1,9 +1,11 @@
 from urllib.parse import urlencode
 from django import forms
+from django.forms import RenderableMixin
 from turnstile.settings import JS_API_URL, SITEKEY, ENABLE
 
 
-class TurnstileWidget(forms.Widget):
+class TurnstileWidget(RenderableMixin, forms.Widget):
+    input_type = "hidden"
     template_name = 'turnstile/forms/widgets/turnstile_widget.html'
 
     def __init__(self, *args, **kwargs):
