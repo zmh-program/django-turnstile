@@ -1,13 +1,10 @@
 import inspect
-import json
-from urllib.error import HTTPError
-from urllib.parse import urlencode
-from urllib.request import build_opener, Request, ProxyHandler
 
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
-from turnstile.settings import DEFAULT_CONFIG, ENABLE, PROXIES, SECRET, TIMEOUT, VERIFY_URL
+from turnstile.services import TurnstileService, TurnstileVerificationException
+from turnstile.settings import DEFAULT_CONFIG, ENABLE
 from turnstile.widgets import TurnstileWidget
 
 
@@ -50,19 +47,17 @@ class TurnstileField(forms.Field):
         if not ENABLE:
             return
         super().validate(value)
-        opener = build_opener(ProxyHandler(PROXIES))
-        post_data = urlencode({
-            'secret': SECRET,
-            'response': value,
-            'remoteip': self.remote_ip,
-        }).encode()
-        request = Request(VERIFY_URL, post_data)
+
+        service = TurnstileService()
+
         try:
-            response = opener.open(request, timeout=TIMEOUT)
-        except HTTPError:
-            raise forms.ValidationError(self.error_messages['error_turnstile'], code='error_turnstile')
+            result = service.verify(
+                value,
+                self.remote_ip
+            )
 
-        response_data = json.loads(response.read().decode("utf-8"))
+        except TurnstileVerificationException:
+            raise forms.ValidationError(self.error_messages['error_turnstile'],code='error_turnstile')
 
-        if not response_data.get('success'):
+        if not result.success:
             raise forms.ValidationError(self.error_messages['invalid_turnstile'], code='invalid_turnstile')
