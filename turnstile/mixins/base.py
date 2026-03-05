@@ -52,7 +52,6 @@ class TurnstileValidationMixin:
                 request.META.get('REMOTE_ADDR')
             )
         except TurnstileVerificationException as e:
-            print(str(e)) #TODO delete 
             raise APIException(_('Validation error.')) from e
 
         if not result.success:
