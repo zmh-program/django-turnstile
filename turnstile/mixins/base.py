@@ -1,6 +1,7 @@
 from django.utils.translation import gettext_lazy as _
 from django.core.exceptions import ImproperlyConfigured
 
+from turnstile import settings
 from turnstile.services import TurnstileService, TurnstileVerificationException
 
 try:
@@ -23,8 +24,22 @@ class TurnstileValidationMixin:
 
         if request.method not in self.methods:
             return
+        if not self.should_validate_turnstile():
+            return
 
         self.validate_turnstile(request)
+
+    def should_validate_turnstile(self):
+        """
+        Turnstile validation is automatically skipped when using default test keys.
+        """
+        sitekey = getattr(settings, 'SITEKEY')
+        secret = getattr(settings, 'SECRET')
+
+        return not (
+            sitekey == settings.TEST_SITEKEY and
+            secret == settings.TEST_SECRET
+        )
 
     def get_captcha_token(self, request):
         """
