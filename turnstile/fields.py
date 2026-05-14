@@ -75,8 +75,10 @@ class TurnstileField(forms.Field):
         if not override and getattr(self.widget, "script_nonce", None):
             return
         resolved_nonce = _resolve_csp_nonce(request)
-        if resolved_nonce:
+        if resolved_nonce is not None:
             self.widget.script_nonce = resolved_nonce
+        elif override:
+            self.widget.script_nonce = None
 
     def widget_attrs(self, widget):
         attrs = super().widget_attrs(widget)
