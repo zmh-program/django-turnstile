@@ -15,8 +15,7 @@ def _resolve_csp_nonce(request):
     if request is None:
         return None
 
-    nonce = getattr(request, "csp_nonce", None)
-    if nonce:
+    if nonce := getattr(request, "csp_nonce", None):
         return str(nonce)
 
     try:
@@ -25,11 +24,12 @@ def _resolve_csp_nonce(request):
         return None
 
     try:
-        nonce = get_nonce(request)
+        if nonce := get_nonce(request):
+            return str(nonce)
     except Exception:
         return None
 
-    return str(nonce) if nonce else None
+    return None
 
 
 class TurnstileField(forms.Field):
@@ -83,7 +83,7 @@ class TurnstileField(forms.Field):
     def widget_attrs(self, widget):
         attrs = super().widget_attrs(widget)
         for key, value in self.widget_settings.items():
-            attrs['data-%s' % key] = value
+            attrs[f'data-{key}'] = value
         return attrs
 
     def validate(self, value):
