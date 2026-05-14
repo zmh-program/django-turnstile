@@ -40,6 +40,11 @@ If you need to, you can also override default turnstile endpoints::
     TURNSTILE_JS_API_URL = 'https://challenges.cloudflare.com/turnstile/v0/api.js'
     TURNSTILE_VERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify'
 
+Control script rendering::
+
+    # Keep current default behavior: render the script automatically.
+    TURNSTILE_RENDER_SCRIPT = True
+
 Use proxies::
 
      TURNSTILE_PROXIES = {
@@ -72,6 +77,49 @@ You can override default config by passing additional arguments::
         ....
         turnstile = TurnstileField(theme='dark', size='compact')
         ....
+
+Script rendering and nonce can also be controlled per field::
+
+    class Forms(forms.Form):
+        # Use this when your project loads the Turnstile API script globally
+        # (for example with a CSP nonce in a base template).
+        turnstile = TurnstileField(render_script=False)
+
+Django built-in CSP nonce integration
+-------------------------------------
+
+When using Django's built-in CSP nonce support (``django.template.context_processors.csp``),
+the recommended setup is:
+
+1. Disable automatic script rendering in this package::
+
+    turnstile = TurnstileField(render_script=False)
+
+2. Render the Turnstile API script yourself in your template with Django's request nonce::
+
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer nonce="{{ csp_nonce }}"></script>
+
+This works well with strict CSP policies (including ``strict-dynamic``) while keeping Turnstile field rendering unchanged.
+
+If you prefer the package to keep rendering the script tag, you can pass the Django request
+to your form and let ``TurnstileField`` resolve a CSP nonce automatically (when Django CSP
+support is available)::
+
+    # views.py
+    def my_view(request):
+        form = MyForm(request.POST or None, request=request)
+
+    # forms.py
+    class MyForm(forms.Form):
+        turnstile = TurnstileField()
+
+        def __init__(self, *args, request=None, **kwargs):
+            super().__init__(*args, **kwargs)
+            if request is not None:
+                self.fields["turnstile"].set_request(request)
+
+Automatic request-based nonce resolution is best-effort and falls back gracefully when CSP
+middleware/APIs are not available.
 
 
 How it Works
