@@ -15,7 +15,7 @@ def _resolve_csp_nonce(request):
     if request is None:
         return None
 
-    if nonce := getattr(request, "csp_nonce", None):
+    if (nonce := getattr(request, "csp_nonce", None)) is not None:
         return str(nonce)
 
     try:
@@ -24,7 +24,8 @@ def _resolve_csp_nonce(request):
         return None
 
     try:
-        if nonce := get_nonce(request):
+        nonce = get_nonce(request)
+        if nonce is not None:
             return str(nonce)
     except Exception:
         return None
