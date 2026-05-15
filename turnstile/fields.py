@@ -15,6 +15,8 @@ def _resolve_csp_nonce(request):
     if request is None:
         return None
 
+    # Django's CSP nonce may be a LazyNonce that is falsy until stringified.
+    # Use an explicit None check so we don't accidentally drop a valid nonce.
     if (nonce := getattr(request, "csp_nonce", None)) is not None:
         return str(nonce)
 
@@ -25,6 +27,7 @@ def _resolve_csp_nonce(request):
 
     try:
         nonce = get_nonce(request)
+        # Same here: avoid truthiness checks for LazyNonce.
         if nonce is not None:
             return str(nonce)
     except Exception:
