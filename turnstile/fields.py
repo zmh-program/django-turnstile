@@ -11,6 +11,31 @@ from turnstile.settings import DEFAULT_CONFIG, ENABLE, PROXIES, SECRET, TIMEOUT,
 from turnstile.widgets import TurnstileWidget
 
 
+def _resolve_csp_nonce(request):
+    if request is None:
+        return None
+
+    # Django's CSP nonce may be a LazyNonce that is falsy until stringified.
+    # Use an explicit None check so we don't accidentally drop a valid nonce.
+    if (nonce := getattr(request, "csp_nonce", None)) is not None:
+        return str(nonce)
+
+    try:
+        from django.middleware.csp import get_nonce
+    except ImportError:
+        return None
+
+    try:
+        nonce = get_nonce(request)
+        # Same here: avoid truthiness checks for LazyNonce.
+        if nonce is not None:
+            return str(nonce)
+    except Exception:
+        return None
+
+    return None
+
+
 class TurnstileField(forms.Field):
     widget = TurnstileWidget
     default_error_messages = {
@@ -34,16 +59,35 @@ class TurnstileField(forms.Field):
         for prop in filter(lambda p: p in widget_settings, ('onload', 'render', 'hl')):
             widget_url_settings[prop] = widget_settings[prop]
             del widget_settings[prop]
+
+        widget_runtime_settings = {}
+        for prop in filter(lambda p: p in widget_settings, ('sitekey', 'render_script', 'request')):
+            widget_runtime_settings[prop] = widget_settings[prop]
+            del widget_settings[prop]
         self.widget_settings = widget_settings
 
         super().__init__(**superclass_kwargs)
 
         self.widget.extra_url = widget_url_settings
+        request = widget_runtime_settings.pop("request", None)
+        for key, value in widget_runtime_settings.items():
+            setattr(self.widget, key, value)
+        if request is not None:
+            self.set_request(request)
+
+    def set_request(self, request, override=False):
+        if not override and getattr(self.widget, "script_nonce", None):
+            return
+        resolved_nonce = _resolve_csp_nonce(request)
+        if resolved_nonce is not None:
+            self.widget.script_nonce = resolved_nonce
+        elif override:
+            self.widget.script_nonce = None
 
     def widget_attrs(self, widget):
         attrs = super().widget_attrs(widget)
         for key, value in self.widget_settings.items():
-            attrs['data-%s' % key] = value
+            attrs[f'data-{key}'] = value
         return attrs
 
     def validate(self, value):
